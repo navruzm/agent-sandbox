@@ -1,0 +1,10 @@
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      # Writes to stdout/stderr in a CLI; their errors are conventionally ignored.
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln

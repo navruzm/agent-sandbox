@@ -1,0 +1,39 @@
+[tools]
+go = "1.26"
+golangci-lint = "2"
+
+[tasks.build]
+description = "Build the sbx binary into ./sbx"
+run = 'CGO_ENABLED=0 go build -trimpath -ldflags "-X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)" -o sbx ./cmd/sbx'
+
+[tasks.install]
+description = "Install sbx with `go install`"
+run = 'CGO_ENABLED=0 go install -trimpath -ldflags "-X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)" ./cmd/sbx'
+
+[tasks.fmt]
+description = "Format the code"
+run = "gofmt -w ."
+
+[tasks.vet]
+description = "Run go vet"
+run = "go vet ./..."
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "golangci-lint run"
+
+[tasks.test]
+description = "Run the tests"
+run = "go test ./..."
+
+[tasks.check]
+description = "gofmt check + golangci-lint + go test"
+run = [
+  'test -z "$(gofmt -l .)" || { echo "gofmt needed:"; gofmt -l .; exit 1; }',
+  "golangci-lint run",
+  "go test ./...",
+]
+
+[tasks.clean]
+description = "Remove the built binary"
+run = "rm -f sbx"
