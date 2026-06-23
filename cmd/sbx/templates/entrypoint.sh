@@ -11,6 +11,14 @@ if [ "$(id -u)" -eq 0 ] && id -u appuser >/dev/null 2>&1; then
 fi
 
 export HOME=/home/appuser
+
+# Use the forwarded $TERM if its terminfo exists here (e.g. tmux-256color, which
+# supports synchronized output and renders TUIs without flicker); otherwise fall
+# back to a TERM we know is present.
+if [ -n "${TERM:-}" ] && ! infocmp "$TERM" >/dev/null 2>&1; then
+  export TERM=xterm-256color
+fi
+
 echo "Sandbox started as user: $(id -un) in directory: $(pwd)"
 
 # Let git authenticate to github.com over HTTPS with the forwarded token FIRST,
@@ -25,10 +33,7 @@ fi
 # (e.g. a private tool that can't be fetched) must not lock you out of the sandbox.
 if [ -f mise.toml ] || [ -f .mise.toml ] || [ -f .config/mise/config.toml ] || [ -f .tool-versions ]; then
   mise trust --all || true
-  # MISE_QUIET avoids the animated multi-progress renderer (which flickers, esp.
-  # under tmux); errors still print. First run can be slow while tools install.
-  echo "sbx: installing project tools via mise (first run may take a while)..." >&2
-  MISE_QUIET=1 mise install || echo "sbx: warning: 'mise install' did not complete; continuing" >&2
+  mise install || echo "sbx: warning: 'mise install' did not complete; continuing" >&2
 fi
 
 # Give Claude Code a temp dir owned by the current user, so its /tmp ownership

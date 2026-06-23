@@ -230,8 +230,6 @@ func TestRunArgsPodman(t *testing.T) {
 		"-v", "claude-config:/home/appuser/.claude:U,z",
 		"-w", "/app",
 		"-e", "CLAUDE_CONFIG_DIR=/home/appuser/.claude",
-		"-e", "TERM=xterm-256color",
-		"-e", "COLORTERM=truecolor",
 		"img:tag", "claude", "--resume",
 	}
 	if !slices.Equal(got, want) {
@@ -273,6 +271,10 @@ func TestRunArgsForwardsGithubToken(t *testing.T) {
 			return "ghp_secret123"
 		case "GOPRIVATE":
 			return "github.com/acme/*"
+		case "TERM":
+			return "tmux-256color"
+		case "COLORTERM":
+			return "truecolor"
 		}
 		return ""
 	}
@@ -280,9 +282,9 @@ func TestRunArgsForwardsGithubToken(t *testing.T) {
 
 	got := app.runArgs("img:tag", nil)
 
-	// Both forwarded as value-less `-e NAME`, so the engine inherits the value
+	// Each forwarded as value-less `-e NAME`, so the engine inherits the value
 	// from sbx's env and nothing sensitive appears on the command line.
-	for _, name := range []string{"GITHUB_TOKEN", "GOPRIVATE"} {
+	for _, name := range []string{"TERM", "COLORTERM", "GITHUB_TOKEN", "GOPRIVATE"} {
 		idx := slices.Index(got, name)
 		if idx < 1 || got[idx-1] != "-e" {
 			t.Fatalf("expected `-e %s` passthrough, got %v", name, got)

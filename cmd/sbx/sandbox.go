@@ -325,13 +325,12 @@ func (a *App) runArgs(tag string, cmd []string) []string {
 	argv = append(argv,
 		"-w", "/app",
 		"-e", "CLAUDE_CONFIG_DIR=/home/appuser/.claude",
-		"-e", "TERM=xterm-256color",
-		"-e", "COLORTERM=truecolor",
 	)
-	// Forward the host GITHUB_TOKEN (when set) for git/gh over HTTPS. Use the
-	// value-less `-e NAME` form so the engine inherits the value from sbx's own
-	// environment — the token never appears on the command line.
-	for _, k := range []string{"GITHUB_TOKEN", "GOPRIVATE"} {
+	// Forward host env by reference (value-less `-e NAME`, so secrets never hit the
+	// command line). TERM/COLORTERM let the in-container TUI match the real terminal
+	// — e.g. tmux-256color, which advertises synchronized output and so doesn't
+	// flicker, unlike a hardcoded xterm-256color.
+	for _, k := range []string{"TERM", "COLORTERM", "GITHUB_TOKEN", "GOPRIVATE"} {
 		if getenv(k) != "" {
 			argv = append(argv, "-e", k)
 		}
