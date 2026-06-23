@@ -116,6 +116,11 @@ var (
 // with permission prompts off (safe because the microVM is the isolation boundary).
 var defaultRunCmd = []string{"claude", "--dangerously-skip-permissions"}
 
+// splitList splits a comma- or whitespace-separated list (e.g. SBX_FORWARD).
+func splitList(s string) []string {
+	return strings.Fields(strings.ReplaceAll(s, ",", " "))
+}
+
 // envEnabled reports whether an on/off env toggle is set to a truthy value.
 func envEnabled(key string) bool {
 	switch strings.ToLower(getenv(key)) {
@@ -326,11 +331,18 @@ func (a *App) runArgs(tag string, cmd []string) []string {
 		"-w", "/app",
 		"-e", "CLAUDE_CONFIG_DIR=/home/appuser/.claude",
 	)
-	// Forward host env by reference (value-less `-e NAME`, so secrets never hit the
-	// command line). TERM/COLORTERM let the in-container TUI match the real terminal
-	// — e.g. tmux-256color, which advertises synchronized output and so doesn't
-	// flicker, unlike a hardcoded xterm-256color.
-	for _, k := range []string{"TERM", "COLORTERM", "GITHUB_TOKEN", "GOPRIVATE"} {
+	// Forward host env by reference (value-less `-e NAME`, so values/secrets never
+	// hit the command line). TERM/COLORTERM match the terminal (tmux-256color
+	// advertises synchronized output, avoiding TUI flicker); GITHUB_TOKEN/GOPRIVATE
+	// enable private access; SBX_FORWARD is a user-supplied list of extra names.
+	forward := []string{"TERM", "COLORTERM", "GITHUB_TOKEN", "GOPRIVATE"}
+	forward = append(forward, splitList(getenv("SBX_FORWARD"))...)
+	seen := map[string]bool{}
+	for _, k := range forward {
+		if k == "" || seen[k] {
+			continue
+		}
+		seen[k] = true
 		if getenv(k) != "" {
 			argv = append(argv, "-e", k)
 		}

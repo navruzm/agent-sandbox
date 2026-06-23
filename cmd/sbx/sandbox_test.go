@@ -297,6 +297,49 @@ func TestRunArgsForwardsGithubToken(t *testing.T) {
 	}
 }
 
+func TestRunArgsForwardsExtraEnv(t *testing.T) {
+	app, _, _, _ := newAppAt("/work/proj")
+	orig := getenv
+	getenv = func(k string) string {
+		switch k {
+		case "SBX_FORWARD":
+			return "FOO, BAR GITHUB_TOKEN" // mixed comma/space + a dup of a built-in
+		case "FOO":
+			return "1"
+		case "BAR":
+			return "secret2"
+		case "GITHUB_TOKEN":
+			return "tok"
+			// BAZ intentionally unset
+		}
+		return ""
+	}
+	defer func() { getenv = orig }()
+
+	got := app.runArgs("img", nil)
+
+	for _, n := range []string{"FOO", "BAR"} {
+		i := slices.Index(got, n)
+		if i < 1 || got[i-1] != "-e" {
+			t.Errorf("expected `-e %s` passthrough, got %v", n, got)
+		}
+	}
+	for _, a := range got { // values must never appear (passed by reference)
+		if a == "1" || a == "secret2" || a == "tok" {
+			t.Errorf("value leaked into argv: %q", a)
+		}
+	}
+	n := 0 // GITHUB_TOKEN listed in SBX_FORWARD too → still forwarded once
+	for _, a := range got {
+		if a == "GITHUB_TOKEN" {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("GITHUB_TOKEN forwarded %d times, want 1 (deduped)", n)
+	}
+}
+
 func TestRunArgsOmitsGithubTokenWhenUnset(t *testing.T) {
 	app, _, _, _ := newAppAt("/work/proj")
 	orig := getenv

@@ -7,9 +7,9 @@ isolated sandbox so they can work autonomously without touching your host.
 
 By default the sandbox is a **podman + krun microVM**, and `sbx` needs **no per-project
 setup** — just `cd project && sbx run`. Each run is a fresh `--rm` container with the
-current directory bind-mounted at `/app`. Language runtimes are managed by
-[`mise`](https://mise.jdx.dev) (declared per project in `mise.toml` / `.tool-versions`),
-so nothing language-specific is baked into the image.
+current directory bind-mounted at `/app`. Per-project language runtimes are managed by
+[`mise`](https://mise.jdx.dev) (declared in `mise.toml` / `.tool-versions`); the image
+ships the Claude CLI plus `uv`/`uvx` (which bring their own Python on demand).
 
 ## Requirements
 
@@ -56,6 +56,7 @@ All optional, via environment variables:
 | `SBX_ISOLATED_CONFIG=1`    | Give this directory its own Claude credentials instead of the shared login.                                                     |
 | `GITHUB_TOKEN`             | Forwarded into the sandbox for private-repo access over HTTPS (see below).                                                      |
 | `GOPRIVATE`                | Forwarded so `go`/mise fetch private modules directly (e.g. `github.com/acme/*`).                                               |
+| `SBX_FORWARD="A B"`        | Names of extra host env vars to forward into the sandbox (values come from your shell — never the command line).                |
 
 ## Customizing the image
 

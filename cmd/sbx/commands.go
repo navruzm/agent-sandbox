@@ -112,6 +112,7 @@ ENV:
   SBX_ISOLATED_CONFIG=1  per-project Claude credentials instead of the shared volume
   SBX_READONLY_GIT=1     mount .git read-only (blocks agent-planted git hooks)
   SBX_CPUS, SBX_RAM_MIB  sandbox CPU / RAM limits (default 4 / 4096)
+  SBX_FORWARD="A B"      extra host env var names to forward into the sandbox
   GITHUB_TOKEN, GOPRIVATE  forwarded into the container for private git/Go access
 
 By default sbx uses one shared image and needs no per-project setup; run sbx init

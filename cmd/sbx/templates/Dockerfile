@@ -16,16 +16,23 @@ RUN chmod +x /entrypoint.sh
 
 USER appuser
 
-# mise manages tool versions; the Claude CLI is the agent itself.
+# mise manages per-project runtimes; the Claude CLI is the agent; uv/uvx run Python
+# tools ad hoc (uv brings its own Python, so no system Python is needed).
 RUN curl -fsSL https://mise.run | sh && \
-    curl -fsSL https://claude.ai/install.sh | bash
+    curl -fsSL https://claude.ai/install.sh | bash && \
+    curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Put the Claude CLI and mise's shims on PATH so installed tools resolve without
-# shell activation (shims are created by `mise install`).
+# Put the Claude CLI, uv/uvx, and mise's shims on PATH so installed tools resolve
+# without shell activation (shims are created by `mise install`).
 ENV PATH="/home/appuser/.local/bin:/home/appuser/.local/share/mise/shims:$PATH"
 # Fallback TERM when the host doesn't forward one; sbx overrides it with the
 # host's $TERM (e.g. tmux-256color) at run time when available.
 ENV TERM=xterm-256color
+# Keep uv's Python installs, tools, and cache inside the persisted per-project
+# mise volume so `uvx` doesn't re-download on every run.
+ENV UV_PYTHON_INSTALL_DIR=/home/appuser/.local/share/mise/uv/python \
+    UV_TOOL_DIR=/home/appuser/.local/share/mise/uv/tools \
+    UV_CACHE_DIR=/home/appuser/.local/share/mise/uv/cache
 
 WORKDIR /app
 ENTRYPOINT ["/entrypoint.sh"]
